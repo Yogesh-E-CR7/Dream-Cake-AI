@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS addresses (
 -- 3. CAKE CATALOG & CONFIGURATION
 CREATE TABLE IF NOT EXISTS cake_categories (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT NOT NULL,
+    name TEXT NOT NULL UNIQUE,
     slug TEXT NOT NULL UNIQUE,
     description TEXT,
     image_url TEXT,
@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS cake_categories (
 
 CREATE TABLE IF NOT EXISTS cake_flavors (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT NOT NULL,
+    name TEXT NOT NULL UNIQUE,
     description TEXT,
     image_url TEXT,
     price_modifier NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
@@ -116,7 +116,7 @@ CREATE TABLE IF NOT EXISTS cake_flavors (
 
 CREATE TABLE IF NOT EXISTS frostings (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT NOT NULL,
+    name TEXT NOT NULL UNIQUE,
     description TEXT,
     price_modifier NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
     active BOOLEAN NOT NULL DEFAULT true,
@@ -125,7 +125,7 @@ CREATE TABLE IF NOT EXISTS frostings (
 
 CREATE TABLE IF NOT EXISTS cake_sizes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT NOT NULL,
+    name TEXT NOT NULL UNIQUE,
     weight_kg NUMERIC(4, 2) NOT NULL,
     servings TEXT NOT NULL,
     price_modifier NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
@@ -134,7 +134,7 @@ CREATE TABLE IF NOT EXISTS cake_sizes (
 
 CREATE TABLE IF NOT EXISTS decorations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT NOT NULL,
+    name TEXT NOT NULL UNIQUE,
     category TEXT NOT NULL,
     description TEXT,
     image_url TEXT,
@@ -271,36 +271,55 @@ RETURNS user_role AS $$
 $$ LANGUAGE sql SECURITY DEFINER;
 
 -- Profiles Policies
+DROP POLICY IF EXISTS "Public profiles viewable by self or staff/admin" ON profiles;
 CREATE POLICY "Public profiles viewable by self or staff/admin"
     ON profiles FOR SELECT
     USING (auth_user_id = auth.uid() OR current_user_role() IN ('staff', 'admin'));
 
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 CREATE POLICY "Users can update own profile"
     ON profiles FOR UPDATE
     USING (auth_user_id = auth.uid() OR current_user_role() = 'admin');
 
+DROP POLICY IF EXISTS "Allow user profile creation" ON profiles;
+CREATE POLICY "Allow user profile creation"
+    ON profiles FOR INSERT
+    WITH CHECK (auth_user_id = auth.uid() OR current_user_role() = 'admin');
+
 -- Cake Catalog Policies (Public read, admin write)
+DROP POLICY IF EXISTS "Public read for active categories" ON cake_categories;
 CREATE POLICY "Public read for active categories" ON cake_categories FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Admin write for categories" ON cake_categories;
 CREATE POLICY "Admin write for categories" ON cake_categories FOR ALL USING (current_user_role() = 'admin');
 
+DROP POLICY IF EXISTS "Public read for active flavors" ON cake_flavors;
 CREATE POLICY "Public read for active flavors" ON cake_flavors FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Admin write for flavors" ON cake_flavors;
 CREATE POLICY "Admin write for flavors" ON cake_flavors FOR ALL USING (current_user_role() = 'admin');
 
+DROP POLICY IF EXISTS "Public read for frostings" ON frostings;
 CREATE POLICY "Public read for frostings" ON frostings FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Admin write for frostings" ON frostings;
 CREATE POLICY "Admin write for frostings" ON frostings FOR ALL USING (current_user_role() = 'admin');
 
+DROP POLICY IF EXISTS "Public read for sizes" ON cake_sizes;
 CREATE POLICY "Public read for sizes" ON cake_sizes FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Admin write for sizes" ON cake_sizes;
 CREATE POLICY "Admin write for sizes" ON cake_sizes FOR ALL USING (current_user_role() = 'admin');
 
+DROP POLICY IF EXISTS "Public read for decorations" ON decorations;
 CREATE POLICY "Public read for decorations" ON decorations FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Admin write for decorations" ON decorations;
 CREATE POLICY "Admin write for decorations" ON decorations FOR ALL USING (current_user_role() = 'admin');
 
 -- Addresses Policies
+DROP POLICY IF EXISTS "Users manage own addresses" ON addresses;
 CREATE POLICY "Users manage own addresses"
     ON addresses FOR ALL
     USING (user_id IN (SELECT id FROM profiles WHERE auth_user_id = auth.uid()));
 
 -- Cake Designs Policies
+DROP POLICY IF EXISTS "Users manage own designs" ON cake_designs;
 CREATE POLICY "Users manage own designs"
     ON cake_designs FOR ALL
     USING (
@@ -309,6 +328,7 @@ CREATE POLICY "Users manage own designs"
     );
 
 -- Orders Policies
+DROP POLICY IF EXISTS "Customers view own orders, Staff/Admin view all" ON orders;
 CREATE POLICY "Customers view own orders, Staff/Admin view all"
     ON orders FOR SELECT
     USING (
@@ -316,10 +336,12 @@ CREATE POLICY "Customers view own orders, Staff/Admin view all"
         OR current_user_role() IN ('staff', 'admin')
     );
 
+DROP POLICY IF EXISTS "Customers can create orders" ON orders;
 CREATE POLICY "Customers can create orders"
     ON orders FOR INSERT
     WITH CHECK (user_id IN (SELECT id FROM profiles WHERE auth_user_id = auth.uid()));
 
+DROP POLICY IF EXISTS "Customer can confirm price, Staff/Admin can update orders" ON orders;
 CREATE POLICY "Customer can confirm price, Staff/Admin can update orders"
     ON orders FOR UPDATE
     USING (
@@ -328,22 +350,20 @@ CREATE POLICY "Customer can confirm price, Staff/Admin can update orders"
     );
 
 -- Order Status History & Notes
+DROP POLICY IF EXISTS "View order history" ON order_status_history;
 CREATE POLICY "View order history" ON order_status_history FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Staff/Admin manage history" ON order_status_history;
 CREATE POLICY "Staff/Admin manage history" ON order_status_history FOR INSERT WITH CHECK (current_user_role() IN ('staff', 'admin'));
 
+DROP POLICY IF EXISTS "Staff/Admin view order notes" ON order_notes;
 CREATE POLICY "Staff/Admin view order notes" ON order_notes FOR SELECT USING (current_user_role() IN ('staff', 'admin'));
+
+DROP POLICY IF EXISTS "Staff/Admin create order notes" ON order_notes;
 CREATE POLICY "Staff/Admin create order notes" ON order_notes FOR INSERT WITH CHECK (current_user_role() IN ('staff', 'admin'));
 
 -- Notifications Policies
+DROP POLICY IF EXISTS "Users view own notifications" ON notifications;
 CREATE POLICY "Users view own notifications"
     ON notifications FOR ALL
     USING (user_id IN (SELECT id FROM profiles WHERE auth_user_id = auth.uid()));
-
--- Storage Buckets Configuration
-INSERT INTO storage.buckets (id, name, public) 
-VALUES 
-    ('avatars', 'avatars', true),
-    ('cake-references', 'cake-references', true),
-    ('cake-previews', 'cake-previews', true),
-    ('cake-assets', 'cake-assets', true)
-ON CONFLICT (id) DO NOTHING;
