@@ -114,8 +114,41 @@ export const OrderRequestPage: React.FC = () => {
     }
   };
 
-  if (isLoading || !design) {
-    return <div className="p-12 text-center text-xs text-chocolate-500">Loading order configuration...</div>;
+  if (isLoading) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-6 animate-pulse pb-12">
+        <div className="h-4 w-28 bg-cream-200 rounded"></div>
+        <div className="h-32 bg-cream-100 rounded-3xl"></div>
+        <div className="h-64 bg-cream-100 rounded-3xl"></div>
+      </div>
+    );
+  }
+
+  if (!design) {
+    return (
+      <div className="max-w-md mx-auto my-12 text-center p-8 bg-white/95 rounded-3xl border border-cream-200 shadow-soft-lg space-y-5 animate-fade-in">
+        <div className="h-16 w-16 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mx-auto border border-rose-100 shadow-inner">
+          <Sparkles className="h-8 w-8" />
+        </div>
+        <div>
+          <h2 className="font-serif text-2xl font-bold text-chocolate-950">Design Not Found</h2>
+          <p className="text-xs text-chocolate-600 mt-1.5 leading-relaxed">
+            Please select or create a cake design in the 3D Studio before requesting an order.
+          </p>
+        </div>
+        <div className="pt-2 flex justify-center">
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            onClick={() => navigate('/customer/designer')}
+            leftIcon={<Sparkles className="h-4 w-4" />}
+          >
+            Open 3D Studio
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   const flavor = flavors.find((f) => f.id === design.flavor_id);

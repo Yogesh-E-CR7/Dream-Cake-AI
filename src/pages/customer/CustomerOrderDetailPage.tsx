@@ -59,8 +59,69 @@ export const CustomerOrderDetailPage: React.FC = () => {
     }
   };
 
-  if (isLoading || !order) {
-    return <div className="p-12 text-center text-xs text-chocolate-500">Loading order details...</div>;
+  if (isLoading) {
+    return (
+      <div className="max-w-5xl mx-auto space-y-6 animate-pulse pb-16">
+        <div className="flex items-center justify-between">
+          <div className="h-4 w-32 bg-cream-200 rounded-lg"></div>
+          <div className="h-6 w-24 bg-cream-200 rounded-full"></div>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-5 space-y-6">
+            <div className="rounded-3xl bg-white/80 border border-cream-200 p-6 space-y-4">
+              <div className="h-64 w-full bg-cream-200 rounded-2xl"></div>
+              <div className="h-6 w-3/4 bg-cream-200 rounded"></div>
+              <div className="h-4 w-1/2 bg-cream-200 rounded"></div>
+              <div className="h-20 bg-cream-100 rounded-xl"></div>
+            </div>
+          </div>
+          <div className="lg:col-span-7 rounded-3xl bg-white/80 border border-cream-200 p-6 space-y-6">
+            <div className="h-7 w-48 bg-cream-200 rounded"></div>
+            <div className="space-y-4 pt-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-16 bg-cream-100 rounded-2xl"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!order) {
+    return (
+      <div className="max-w-md mx-auto my-12 text-center p-8 bg-white/95 rounded-3xl border border-cream-200 shadow-soft-lg space-y-5 animate-fade-in">
+        <div className="h-16 w-16 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mx-auto border border-rose-100 shadow-inner">
+          <ChefHat className="h-8 w-8" />
+        </div>
+        <div>
+          <h2 className="font-serif text-2xl font-bold text-chocolate-950">Order Not Found</h2>
+          <p className="text-xs text-chocolate-600 mt-1.5 leading-relaxed">
+            We couldn't locate order <span className="font-mono font-semibold text-rose-700">#{id}</span>. It may have been completed, moved, or placed under a different profile.
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-2 pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/customer/orders')}
+            leftIcon={<ArrowLeft className="h-4 w-4" />}
+          >
+            My Orders
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            size="sm"
+            onClick={() => navigate('/customer/designer')}
+            leftIcon={<Sparkles className="h-4 w-4" />}
+          >
+            Design a Cake
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   const isAwaitingPriceConfirmation = order.order_status === 'PRICE_CONFIRMATION' && !order.customer_confirmed_price;

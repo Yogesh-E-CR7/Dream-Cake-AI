@@ -108,8 +108,52 @@ export const StaffOrderDetailPage: React.FC = () => {
     loadData();
   };
 
-  if (isLoading || !order) {
-    return <div className="p-12 text-center text-xs text-chocolate-500">Loading order processing details...</div>;
+  if (isLoading) {
+    return (
+      <div className="max-w-6xl mx-auto space-y-6 animate-pulse pb-16">
+        <div className="flex items-center justify-between">
+          <div className="h-4 w-32 bg-cream-200 rounded-lg"></div>
+          <div className="h-6 w-24 bg-cream-200 rounded-full"></div>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-4 space-y-6">
+            <div className="h-64 w-full bg-cream-200 rounded-3xl"></div>
+            <div className="h-40 w-full bg-cream-100 rounded-2xl"></div>
+          </div>
+          <div className="lg:col-span-8 space-y-6">
+            <div className="h-48 w-full bg-cream-100 rounded-3xl"></div>
+            <div className="h-64 w-full bg-cream-100 rounded-3xl"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!order) {
+    return (
+      <div className="max-w-md mx-auto my-12 text-center p-8 bg-white/95 rounded-3xl border border-cream-200 shadow-soft-lg space-y-5 animate-fade-in">
+        <div className="h-16 w-16 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mx-auto border border-rose-100 shadow-inner">
+          <ChefHat className="h-8 w-8" />
+        </div>
+        <div>
+          <h2 className="font-serif text-2xl font-bold text-chocolate-950">Order Not Found</h2>
+          <p className="text-xs text-chocolate-600 mt-1.5 leading-relaxed">
+            Order <span className="font-mono font-semibold text-rose-700">#{id}</span> was not found in the kitchen queue.
+          </p>
+        </div>
+        <div className="pt-2 flex justify-center">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/staff/orders')}
+            leftIcon={<ArrowLeft className="h-4 w-4" />}
+          >
+            Back to Kitchen Queue
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   const design = order.design;

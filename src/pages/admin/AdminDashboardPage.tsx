@@ -25,7 +25,16 @@ export const AdminDashboardPage: React.FC = () => {
   }, []);
 
   if (isLoading || !analytics) {
-    return <div className="p-12 text-center text-xs text-chocolate-500">Loading business analytics...</div>;
+    return (
+      <div className="space-y-6 animate-pulse pb-12">
+        <div className="h-8 w-48 bg-cream-200 rounded"></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-28 bg-white/80 border border-cream-200 rounded-3xl"></div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   const kpis = [

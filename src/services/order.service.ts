@@ -21,17 +21,40 @@ export class OrderService {
     const orders = localDb.getOrders(userId);
     // Enrich joins
     return orders.map((o) => {
-      const design = localDb.getDesignById(o.design_id);
-      const customer = localDb.getProfiles().find((p) => p.id === o.user_id);
-      const assigned_staff = o.assigned_staff_id ? localDb.getProfiles().find((p) => p.id === o.assigned_staff_id) : undefined;
-      const delivery_address = o.delivery_address_id ? localDb.getAddresses(o.user_id).find((a) => a.id === o.delivery_address_id) : undefined;
+      const design = localDb.getDesignById(o.design_id) || o.design;
+      const customer = localDb.getProfiles().find((p) => p.id === o.user_id) || o.customer;
+      const assigned_staff = o.assigned_staff_id ? localDb.getProfiles().find((p) => p.id === o.assigned_staff_id) : o.assigned_staff;
+      const delivery_address = o.delivery_address_id ? localDb.getAddresses(o.user_id).find((a) => a.id === o.delivery_address_id) : o.delivery_address;
       return { ...o, design: design || undefined, customer, assigned_staff, delivery_address };
     });
   }
 
   static async getOrderById(id: string): Promise<Order | null> {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*, design:cake_designs(*), customer:profiles!orders_user_id_fkey(*), assigned_staff:profiles!orders_assigned_staff_id_fkey(*), delivery_address:addresses(*)')
+          .or(`id.eq.${id},order_number.eq.${id}`)
+          .maybeSingle();
+        if (!error && data) return data;
+      } catch (e) {
+        console.warn('Supabase fetch single order failed:', e);
+      }
+    }
     const orders = await this.getOrders();
-    return orders.find((o) => o.id === id || o.order_number === id) || null;
+    const found = orders.find((o) => o.id === id || o.order_number === id);
+    if (found) return found;
+
+    const direct = localDb.getOrderById(id);
+    if (direct) {
+      const design = localDb.getDesignById(direct.design_id) || direct.design;
+      const customer = localDb.getProfiles().find((p) => p.id === direct.user_id) || direct.customer;
+      const assigned_staff = direct.assigned_staff_id ? localDb.getProfiles().find((p) => p.id === direct.assigned_staff_id) : direct.assigned_staff;
+      const delivery_address = direct.delivery_address_id ? localDb.getAddresses(direct.user_id).find((a) => a.id === direct.delivery_address_id) : direct.delivery_address;
+      return { ...direct, design: design || undefined, customer, assigned_staff, delivery_address };
+    }
+    return null;
   }
 
   static async createOrder(params: {
