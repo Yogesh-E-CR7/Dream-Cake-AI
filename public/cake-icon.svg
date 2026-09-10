@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <defs>
+    <linearGradient id="cakeGrad" x1="6" y1="12" x2="42" y2="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#E11D48" />
+      <stop offset="60%" stop-color="#BE123C" />
+      <stop offset="100%" stop-color="#72142B" />
+    </linearGradient>
+    <linearGradient id="goldSparkle" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F6E7A1" />
+      <stop offset="100%" stop-color="#D4AF37" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Plate / Stand Base -->
+  <ellipse cx="24" cy="42" rx="18" ry="3" fill="#DCCABB" />
+  <path d="M18 42H30V44C30 44.5 29.5 45 28.5 45H19.5C18.5 45 18 44.5 18 44V42Z" fill="#C5AA96" />
+
+  <!-- Bottom Tier -->
+  <rect x="10" y="27" width="28" height="13" rx="4" fill="url(#cakeGrad)" />
+  <!-- Drip icing bottom -->
+  <path d="M10 31C13 33 15 29 18 32C21 35 23 30 26 33C29 36 32 30 35 32C37 33 38 31 38 31V27H10V31Z" fill="#FDF2F4" opacity="0.9" />
+
+  <!-- Top Tier -->
+  <rect x="15" y="17" width="18" height="10" rx="3" fill="#FB7185" />
+  <!-- Drip icing top -->
+  <path d="M15 20C17 22 19 19 21 21C23 23 25 20 27 22C29 24 31 20 33 21V17H15V20Z" fill="#FFF1F4" />
+
+  <!-- Cherry / Candle -->
+  <circle cx="24" cy="14" r="3" fill="#E11D48" />
+  
+  <!-- AI Sparkles -->
+  <path d="M38 8L39.2 11.8L43 13L39.2 14.2L38 18L36.8 14.2L33 13L36.8 11.8L38 8Z" fill="url(#goldSparkle)" />
+  <path d="M10 11L10.7 13.3L13 14L10.7 14.7L10 17L9.3 14.7L7 14L9.3 13.3L10 11Z" fill="url(#goldSparkle)" />
+</svg>
