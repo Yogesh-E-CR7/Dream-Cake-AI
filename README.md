@@ -182,5 +182,17 @@ dream-cake-ai/
 
 ---
 
+## 📚 Project Better Tomorrow & Technical Documentation
+
+Comprehensive engineering, empathy, and AI architecture specifications are available in the [`docs/`](./docs) directory:
+
+- 📄 **[Project Better Tomorrow Pathway Decision & Empathy Records](./docs/PROJECT_BETTER_TOMORROW_PATHWAY.md)**: Formal evaluation and selection of Pathway A (Multimodal Co-Creation & Smart Feasibility Studio) vs. Pathway B, accompanied by contextual empathy observation logs across consumers, head pastry chefs, and cake decorators.
+- 📋 **[Designer Studio User Validation Logs & Qualitative Feedback](./docs/USER_VALIDATION_LOGS.md)**: Alpha-2 pilot testing results with three real-world stakeholders, quantitative System Usability Scale (SUS: 87.5/100) scoring, task completion metrics, and iterative UI/UX enhancements.
+- 🧠 **[AI Model Integration Architecture & Engineering Specification](./docs/AI_ARCHITECTURE_SPECIFICATION.md)**: Production architecture detailing the 4-stage LLM reasoning pipeline, multimodal vision API handling for Pinterest/reference moodboard parsing, and the multi-layer prompt safety & allergen firewall.
+- 🔮 **[Improvements & Next Steps](./docs/IMPROVEMENTS_AND_NEXT_STEPS.md)**: Future roadmap and phased milestones for production scaling.
+
+---
+
 ## 📜 License
 MIT © 2026 Dream Cake AI. All rights reserved.
+
