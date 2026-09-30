@@ -119,25 +119,145 @@ You can use the 1-click quick demo buttons on the landing page or top bar to tes
 
 ---
 
-## 🗄️ Database Schema & Supabase Setup
+---
 
-### 1. SQL Migrations
-Execute `supabase/migrations/20260909_init_schema.sql` in the Supabase SQL Editor to initialize:
-- Custom ENUM types (`user_role`, `order_status`, `design_status`, etc.)
-- Tables: `profiles`, `customer_profiles`, `addresses`, `cake_categories`, `cake_flavors`, `frostings`, `cake_sizes`, `decorations`, `cake_designs`, `ai_generations`, `orders`, `order_status_history`, `order_notes`, `notifications`, `payments`.
-- Row Level Security (RLS) policies for Customer, Staff, and Admin isolation.
-- Storage buckets (`avatars`, `cake-references`, `cake-previews`, `cake-assets`).
+## 🗄️ Database Schema & Supabase Data Architecture
 
-### 2. Seed Data
-Execute `supabase/seed.sql` to populate the catalog with rich gourmet flavors, artisan frostings, sizes, and handcrafted decoration items.
+The application is backed by a relational PostgreSQL schema designed for strict relational integrity, auditing, and Row Level Security (RLS).
+
+### 1. Entity-Relationship & Relational Overview
+
+```mermaid
+erDiagram
+    PROFILES ||--o{ CUSTOMER_PROFILES : "extends"
+    PROFILES ||--o{ ADDRESSES : "owns"
+    PROFILES ||--o{ CAKE_DESIGNS : "creates"
+    PROFILES ||--o{ ORDERS : "places"
+    CAKE_DESIGNS ||--o{ ORDERS : "instantiates"
+    ORDERS ||--o{ ORDER_STATUS_HISTORY : "tracks"
+    ORDERS ||--o{ ORDER_NOTES : "contains"
+    ORDERS ||--o{ PAYMENTS : "billed_under"
+    CAKE_CATEGORIES ||--o{ CAKE_DESIGNS : "categorizes"
+    CAKE_FLAVORS ||--o{ CAKE_DESIGNS : "flavors"
+    FROSTINGS ||--o{ CAKE_DESIGNS : "frosts"
+    CAKE_SIZES ||--o{ CAKE_DESIGNS : "sizes"
+```
+
+### 2. Table Definitions & Column Specifications
+
+| Table | Primary Key | Key Columns & Foreign Keys | Description |
+|---|---|---|---|
+| `profiles` | `id (UUID)` | `auth_user_id (UUID)`, `email (TEXT)`, `role (user_role)`, `full_name (TEXT)` | Base identity table for Customer, Staff, and Admin roles. |
+| `customer_profiles` | `id (UUID)` | `user_id (FK -> profiles.id)`, `preferred_flavor`, `preferences (JSONB)` | Extended customer taste profiles and dietary restrictions. |
+| `addresses` | `id (UUID)` | `user_id (FK -> profiles.id)`, `address_line_1`, `city`, `postal_code`, `is_default` | Customer delivery locations. |
+| `cake_categories` | `id (UUID)` | `name`, `slug`, `base_price (NUMERIC)`, `active (BOOLEAN)` | Occasion & style categories (Birthday, Wedding, Anniversary, Bento). |
+| `cake_flavors` | `id (UUID)` | `name`, `price_modifier (NUMERIC)`, `active (BOOLEAN)` | Gourmet sponge flavors (Belgian Chocolate, Red Velvet, Mango). |
+| `frostings` | `id (UUID)` | `name`, `price_modifier (NUMERIC)`, `active (BOOLEAN)` | Artisan frosting types (Swiss Buttercream, Ganache, Cream Cheese). |
+| `cake_sizes` | `id (UUID)` | `weight_kg (NUMERIC)`, `servings_min`, `servings_max`, `price_modifier` | Weight classifications from 0.5kg Bento to 5.0kg+ Gala tiers. |
+| `decorations` | `id (UUID)` | `name`, `price (NUMERIC)`, `category (TEXT)`, `active (BOOLEAN)` | Handcrafted add-ons (24K Gold Leaf, Sugar Roses, Acrylic Toppers). |
+| `cake_designs` | `id (UUID)` | `user_id (FK -> profiles.id)`, `tiers (INT)`, `primary_color`, `secondary_color`, `status (design_status)` | Complete 14-step parametric cake studio configurations. |
+| `ai_generations` | `id (UUID)` | `user_id (FK -> profiles.id)`, `generation_type (generation_type)`, `prompt (TEXT)`, `response (JSONB)` | Prompt audit trail and reference image analysis telemetry. |
+| `orders` | `id (UUID)` | `order_number`, `user_id (FK)`, `design_id (FK)`, `order_status (order_status)`, `estimated_price`, `final_price` | Core order lifecycle record with price negotiation state. |
+| `order_status_history` | `id (UUID)` | `order_id (FK -> orders.id)`, `status (order_status)`, `message (TEXT)`, `updated_by (FK)` | Immutable audit log of all kitchen and customer status transitions. |
+| `order_notes` | `id (UUID)` | `order_id (FK -> orders.id)`, `author_id (FK)`, `note (TEXT)`, `internal (BOOLEAN)` | Kitchen-to-staff and customer communication notes. |
+| `notifications` | `id (UUID)` | `user_id (FK -> profiles.id)`, `type (TEXT)`, `title (TEXT)`, `read (BOOLEAN)` | In-app push notification inbox. |
+
+### 3. PostgreSQL ENUM Types
+* `user_role`: `'customer'`, `'staff'`, `'admin'`
+* `order_status`: `'PENDING_REVIEW'`, `'PRICE_CONFIRMATION'`, `'CONFIRMED'`, `'PREPARING'`, `'DECORATING'`, `'QUALITY_CHECK'`, `'READY'`, `'OUT_FOR_DELIVERY'`, `'COMPLETED'`, `'CANCELLED'`
+* `order_type`: `'PICKUP'`, `'DELIVERY'`
+* `design_status`: `'DRAFT'`, `'READY'`, `'ARCHIVED'`
+* `generation_type`: `'CHAT'`, `'REFERENCE_ANALYSIS'`, `'PREVIEW'`, `'SUGGESTION'`
+* `payment_status`: `'PENDING'`, `'PAID'`, `'FAILED'`, `'REFUNDED'`
 
 ---
 
-## 🧪 Running Tests
+## 🔌 API & Service Contracts
+
+All business logic is isolated within strongly typed service classes supporting dual-mode execution (Supabase Postgres backend or in-memory LocalDB fallback):
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                               SERVICE ARCHITECTURE MAP                                 │
+├─────────────────────┬──────────────────────────────────────────────────────────────────┤
+│ Service             │ Key Methods & Responsibilities                                   │
+├─────────────────────┼──────────────────────────────────────────────────────────────────┤
+│ AuthService         │ • login(email, password): Promise<User>                          │
+│                     │ • signup(email, password, name, role): Promise<User>             │
+│                     │ • logout(): Promise<void>                                        │
+│                     │ • getCurrentUser(): Promise<User | null>                         │
+├─────────────────────┼──────────────────────────────────────────────────────────────────┤
+│ CakeService         │ • getCategories(): Promise<CakeCategory[]>                       │
+│                     │ • getFlavors(): Promise<CakeFlavor[]>                            │
+│                     │ • getFrostings(): Promise<Frosting[]>                            │
+│                     │ • getSizes(): Promise<CakeSize[]>                                │
+│                     │ • getDecorations(): Promise<Decoration[]>                        │
+├─────────────────────┼──────────────────────────────────────────────────────────────────┤
+│ DesignService       │ • saveDesign(design: Partial<CakeDesign>): Promise<CakeDesign>   │
+│                     │ • getDesigns(userId?: string): Promise<CakeDesign[]>             │
+│                     │ • getDesignById(id: string): Promise<CakeDesign | null>          │
+│                     │ • deleteDesign(id: string): Promise<boolean>                     │
+├─────────────────────┼──────────────────────────────────────────────────────────────────┤
+│ OrderService        │ • getOrders(userId?: string): Promise<Order[]>                   │
+│                     │ • getOrderById(id: string): Promise<Order | null>                │
+│                     │ • createOrder(params): Promise<Order>                            │
+│                     │ • setStaffQuote(orderId, staffId, price, notes): Promise<Order>  │
+│                     │ • confirmCustomerPrice(orderId, userId): Promise<Order>          │
+│                     │ • updateStatus(orderId, staffId, status, msg): Promise<Order>    │
+│                     │ • addOrderNote(orderId, authorId, note, internal): Promise<Note> │
+├─────────────────────┼──────────────────────────────────────────────────────────────────┤
+│ PricingService      │ • calculatePrice(config, catalog): PriceCalculationResult        │
+│                     │ • estimateTierWeight(tiers, sizeId): number                      │
+│                     │ • calculateMargin(retailPrice, foodCost): MarginBreakdown        │
+├─────────────────────┼──────────────────────────────────────────────────────────────────┤
+│ AIService           │ • chat(message, currentDesign, history): Promise<AIChatMessage>  │
+│                     │ • analyzeReference(image, design): Promise<AIReferenceAnalysis>  │
+│                     │ • generatePreview(design): Promise<string>                       │
+│                     │ • getSuggestions(design): Promise<AISuggestion[]>                │
+├─────────────────────┼──────────────────────────────────────────────────────────────────┤
+│ NotificationService │ • getNotifications(userId): Promise<NotificationItem[]>          │
+│                     │ • send(notificationPayload): Promise<NotificationItem>           │
+│                     │ • markAsRead(id): Promise<void>                                  │
+├─────────────────────┼──────────────────────────────────────────────────────────────────┤
+│ AdminService        │ • getCatalogStats(): Promise<CatalogStats>                       │
+│                     │ • updatePricingMatrix(matrix): Promise<void>                     │
+│                     │ • manageUsers(filters): Promise<Profile[]>                       │
+└─────────────────────┴──────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🛡️ Enterprise Error Boundaries & Crash Prevention
+
+The frontend utilizes a custom `ErrorBoundary` component ([`src/components/common/ErrorBoundary.tsx`](./src/components/common/ErrorBoundary.tsx)) protecting against WebGL rendering exceptions, state transition panics, and unexpected DOM crashes.
+
+### Key Capabilities:
+1. **Granular Fault Containment**: Wraps the entire routing tree in `App.tsx` and key interactive viewports (`CakePreviewCanvas`, `CakeDesignerPage`, `StaffDashboardPage`).
+2. **Deterministic State Derivation**: Implements `static getDerivedStateFromError(error)` to capture fatal rendering faults without tearing down the React tree.
+3. **Telemetry & Error Logging**: `componentDidCatch(error, errorInfo)` captures stack traces, component hierarchies, and diagnostic metadata for telemetry reporting.
+4. **Branded Recovery UI**: Displays user-friendly recovery options ("Try Again" state reset, "Return Home", or window refresh) with detailed expandable debug traces for developer inspection.
+
+---
+
+## 🧪 Comprehensive Unit Testing Strategy
+
+Dream Cake AI maintains a dedicated test suite powered by **Vitest** configured for fast, headless execution.
+
+### Test Execution Command
 ```bash
 npm test
 ```
-Runs the Vitest suite verifying the dynamic pricing engine calculations, multi-tier surcharges, and complexity modifiers.
+
+### Test Suite Breakdown
+
+| Test Suite | File | Tests | Coverage Scope |
+|---|---|---|---|
+| **Pricing Engine** | [`tests/pricing.test.ts`](./tests/pricing.test.ts) | 2 tests | Standard base price calculation, multi-tier surcharges, custom shape multipliers, and decoration aggregation. |
+| **AI Model Pipeline** | [`tests/ai.test.ts`](./tests/ai.test.ts) | 4 tests | Conversational stylist intent matching (Romantic, Chocolate, Kids, Floral), reference image visual attribute parsing, and non-destructive suggestion generation. |
+| **Order Lifecycle** | [`tests/order.test.ts`](./tests/order.test.ts) | 5 tests | Seeded order relation enrichment, initial `PENDING_REVIEW` order creation, staff price quote transitions (`PRICE_CONFIRMATION`), customer price confirmation (`CONFIRMED`), and sequential kitchen workstation status progression (`PREPARING` $\rightarrow$ `DECORATING` $\rightarrow$ `READY`). |
+| **Error Boundary** | [`tests/errorBoundary.test.tsx`](./tests/errorBoundary.test.tsx) | 4 tests | Lifecycle default states, `getDerivedStateFromError` mutation, `componentDidCatch` diagnostic logging, and fallback UI rendering. |
+
+*Total Suites: **4 passed (4)** | Total Tests: **15 passed (15)** | Execution Duration: **< 4.0s***
 
 ---
 

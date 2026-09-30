@@ -6,6 +6,7 @@ import { CustomerLayout } from './components/layout/CustomerLayout';
 import { StaffLayout } from './components/layout/StaffLayout';
 import { AdminLayout } from './components/layout/AdminLayout';
 import { AccessDeniedPage } from './pages/AccessDeniedPage';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 // Customer Pages
 import { CustomerHomePage } from './pages/customer/CustomerHomePage';
@@ -79,75 +80,77 @@ export const App: React.FC = () => {
   }, []);
 
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Landing / Auth Entry */}
-        <Route path="/" element={<AuthLandingGuard />} />
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Routes>
+          {/* Landing / Auth Entry */}
+          <Route path="/" element={<AuthLandingGuard />} />
 
-        {/* Customer Portal */}
-        <Route
-          path="/customer"
-          element={
-            <ProtectedRoute allowedRoles={['customer', 'staff', 'admin']}>
-              <CustomerLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route path="home" element={<CustomerHomePage />} />
-          <Route path="design" element={<CakeDesignerPage />} />
-          <Route path="designs" element={<SavedDesignsPage />} />
-          <Route path="orders" element={<CustomerOrdersPage />} />
-          <Route path="orders/request" element={<OrderRequestPage />} />
-          <Route path="orders/:id" element={<CustomerOrderDetailPage />} />
-          <Route path="favorites" element={<SavedDesignsPage />} />
-          <Route path="profile" element={<CustomerProfilePage />} />
-          <Route path="addresses" element={<CustomerAddressesPage />} />
-          <Route index element={<Navigate to="home" replace />} />
-        </Route>
+          {/* Customer Portal */}
+          <Route
+            path="/customer"
+            element={
+              <ProtectedRoute allowedRoles={['customer', 'staff', 'admin']}>
+                <CustomerLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="home" element={<CustomerHomePage />} />
+            <Route path="design" element={<CakeDesignerPage />} />
+            <Route path="designs" element={<SavedDesignsPage />} />
+            <Route path="orders" element={<CustomerOrdersPage />} />
+            <Route path="orders/request" element={<OrderRequestPage />} />
+            <Route path="orders/:id" element={<CustomerOrderDetailPage />} />
+            <Route path="favorites" element={<SavedDesignsPage />} />
+            <Route path="profile" element={<CustomerProfilePage />} />
+            <Route path="addresses" element={<CustomerAddressesPage />} />
+            <Route index element={<Navigate to="home" replace />} />
+          </Route>
 
-        {/* Staff Portal */}
-        <Route
-          path="/staff"
-          element={
-            <ProtectedRoute allowedRoles={['staff', 'admin']}>
-              <StaffLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route path="dashboard" element={<StaffDashboardPage />} />
-          <Route path="orders" element={<StaffOrdersPage />} />
-          <Route path="orders/:id" element={<StaffOrderDetailPage />} />
-          <Route index element={<Navigate to="dashboard" replace />} />
-        </Route>
+          {/* Staff Portal */}
+          <Route
+            path="/staff"
+            element={
+              <ProtectedRoute allowedRoles={['staff', 'admin']}>
+                <StaffLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="dashboard" element={<StaffDashboardPage />} />
+            <Route path="orders" element={<StaffOrdersPage />} />
+            <Route path="orders/:id" element={<StaffOrderDetailPage />} />
+            <Route index element={<Navigate to="dashboard" replace />} />
+          </Route>
 
-        {/* Admin Portal */}
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AdminLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route path="dashboard" element={<AdminDashboardPage />} />
-          <Route path="orders" element={<StaffOrdersPage />} />
-          <Route path="categories" element={<AdminCatalogPage />} />
-          <Route path="flavors" element={<AdminCatalogPage />} />
-          <Route path="frostings" element={<AdminCatalogPage />} />
-          <Route path="sizes" element={<AdminCatalogPage />} />
-          <Route path="decorations" element={<AdminCatalogPage />} />
-          <Route path="pricing" element={<AdminPricingPage />} />
-          <Route path="users" element={<AdminUsersPage />} />
-          <Route index element={<Navigate to="dashboard" replace />} />
-        </Route>
+          {/* Admin Portal */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="dashboard" element={<AdminDashboardPage />} />
+            <Route path="orders" element={<StaffOrdersPage />} />
+            <Route path="categories" element={<AdminCatalogPage />} />
+            <Route path="flavors" element={<AdminCatalogPage />} />
+            <Route path="frostings" element={<AdminCatalogPage />} />
+            <Route path="sizes" element={<AdminCatalogPage />} />
+            <Route path="decorations" element={<AdminCatalogPage />} />
+            <Route path="pricing" element={<AdminPricingPage />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route index element={<Navigate to="dashboard" replace />} />
+          </Route>
 
-        {/* Access Denied */}
-        <Route path="/access-denied" element={<AccessDeniedPage />} />
+          {/* Access Denied */}
+          <Route path="/access-denied" element={<AccessDeniedPage />} />
 
-        {/* Catch All */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+          {/* Catch All */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 };
 

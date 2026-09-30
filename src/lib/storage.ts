@@ -41,9 +41,24 @@ const STORAGE_KEYS = {
 };
 
 class LocalStorageDB {
+  private memoryStore: Map<string, string> = new Map();
+
+  private getStorage(): { getItem: (k: string) => string | null; setItem: (k: string, v: string) => void } {
+    if (typeof localStorage !== 'undefined') {
+      return localStorage;
+    }
+    return {
+      getItem: (key: string) => this.memoryStore.get(key) || null,
+      setItem: (key: string, val: string) => {
+        this.memoryStore.set(key, val);
+      },
+    };
+  }
+
   private getItem<T>(key: string, defaultVal: T): T {
     try {
-      const item = localStorage.getItem(key);
+      const storage = this.getStorage();
+      const item = storage.getItem(key);
       return item ? JSON.parse(item) : defaultVal;
     } catch (e) {
       return defaultVal;
@@ -52,41 +67,43 @@ class LocalStorageDB {
 
   private setItem<T>(key: string, val: T): void {
     try {
-      localStorage.setItem(key, JSON.stringify(val));
+      const storage = this.getStorage();
+      storage.setItem(key, JSON.stringify(val));
     } catch (e) {
       console.error('Storage error:', e);
     }
   }
 
   init() {
-    if (!localStorage.getItem(STORAGE_KEYS.CATEGORIES)) {
+    const storage = this.getStorage();
+    if (!storage.getItem(STORAGE_KEYS.CATEGORIES)) {
       this.setItem(STORAGE_KEYS.CATEGORIES, MOCK_CATEGORIES);
     }
-    if (!localStorage.getItem(STORAGE_KEYS.FLAVORS)) {
+    if (!storage.getItem(STORAGE_KEYS.FLAVORS)) {
       this.setItem(STORAGE_KEYS.FLAVORS, MOCK_FLAVORS);
     }
-    if (!localStorage.getItem(STORAGE_KEYS.FROSTINGS)) {
+    if (!storage.getItem(STORAGE_KEYS.FROSTINGS)) {
       this.setItem(STORAGE_KEYS.FROSTINGS, MOCK_FROSTINGS);
     }
-    if (!localStorage.getItem(STORAGE_KEYS.SIZES)) {
+    if (!storage.getItem(STORAGE_KEYS.SIZES)) {
       this.setItem(STORAGE_KEYS.SIZES, MOCK_SIZES);
     }
-    if (!localStorage.getItem(STORAGE_KEYS.DECORATIONS)) {
+    if (!storage.getItem(STORAGE_KEYS.DECORATIONS)) {
       this.setItem(STORAGE_KEYS.DECORATIONS, MOCK_DECORATIONS);
     }
-    if (!localStorage.getItem(STORAGE_KEYS.PROFILES)) {
+    if (!storage.getItem(STORAGE_KEYS.PROFILES)) {
       this.setItem(STORAGE_KEYS.PROFILES, DEMO_PROFILES);
     }
-    if (!localStorage.getItem(STORAGE_KEYS.DESIGNS)) {
+    if (!storage.getItem(STORAGE_KEYS.DESIGNS)) {
       this.setItem(STORAGE_KEYS.DESIGNS, INITIAL_DESIGNS);
     }
-    if (!localStorage.getItem(STORAGE_KEYS.ORDERS)) {
+    if (!storage.getItem(STORAGE_KEYS.ORDERS)) {
       this.setItem(STORAGE_KEYS.ORDERS, INITIAL_ORDERS);
     }
-    if (!localStorage.getItem(STORAGE_KEYS.NOTIFICATIONS)) {
+    if (!storage.getItem(STORAGE_KEYS.NOTIFICATIONS)) {
       this.setItem(STORAGE_KEYS.NOTIFICATIONS, INITIAL_NOTIFICATIONS);
     }
-    if (!localStorage.getItem(STORAGE_KEYS.ADDRESSES)) {
+    if (!storage.getItem(STORAGE_KEYS.ADDRESSES)) {
       this.setItem(STORAGE_KEYS.ADDRESSES, [
         {
           id: 'addr-1',

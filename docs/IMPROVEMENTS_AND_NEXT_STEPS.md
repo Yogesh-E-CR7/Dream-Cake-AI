@@ -124,8 +124,69 @@ CRITICAL BEHAVIORAL CONSTRAINTS:
 
 ---
 
-## 4. Next Implementation Roadmap
+---
 
-- [ ] **Phase 1**: WebGL / Three.js 3D Interactive Cake Model Renderer for real-time 360-degree rotation and layer slicing.
-- [ ] **Phase 2**: Production Payment Gateway Webhook integration (Stripe / Razorpay) for automated escrow deposit handling upon quote confirmation.
-- [ ] **Phase 3**: WhatsApp & SMS Notification Webhooks for real-time delivery driver tracking and kitchen alerts.
+## 4. Granular Unit Testing Architecture & Error Boundary Specifications
+
+### 🧪 Unit Testing Strategy & Vitest Pipeline
+Our testing pipeline is designed around zero-network-dependency unit tests running on Vitest.
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                              VITEST TEST SUITE ARCHITECTURE                            │
+├─────────────────────┬───────────────────┬──────────────────────────────────────────────┤
+│ Suite               │ Test File         │ Verification Objectives                      │
+├─────────────────────┼───────────────────┼──────────────────────────────────────────────┤
+│ 1. Dynamic Pricing  │ pricing.test.ts   │ Baseline costs, tier multipliers, decorators │
+│ 2. AI Stylist & Vis │ ai.test.ts        │ Prompt keyword parsing, reference JSON schema│
+│ 3. Order Lifecycle  │ order.test.ts     │ 10-state machine transitions, quoting, locks │
+│ 4. Error Boundaries │ errorBoundary.test│ Component crash trapping, telemetry, recovery│
+└─────────────────────┴───────────────────┴──────────────────────────────────────────────┘
+```
+
+#### Mocking & Isolation Strategy:
+1. **In-Memory Storage Mocking**: `LocalStorageDB` in `src/lib/storage.ts` dynamically detects whether `localStorage` is available and defaults to an in-memory `Map<string, string>` in test runner environments.
+2. **Supabase Network Decoupling**: Tests mock `@supabase/supabase-js` via `vi.mock('../src/lib/supabase')`, verifying fallback resilience without network timeouts.
+
+### 🛡️ Error Boundary Architecture & Fallback Mechanics
+The application is wrapped in an enterprise `ErrorBoundary` (`src/components/common/ErrorBoundary.tsx`):
+- **Deterministic Catching**: Catches any unhandled WebGL rendering crash, canvas context loss, or corrupted user state.
+- **Diagnostics Capture**: Gathers component stack traces and logs them to console / cloud telemetry.
+- **Interactive Recovery**: Offers one-click state reset, home redirection, and expandable error logs.
+
+---
+
+## 5. API Endpoints & Database Schema Reference
+
+### 🗄️ PostgreSQL Relational Schema Summary
+- **`profiles`**: UUID PK, `auth_user_id`, `email`, `role` (`customer`, `staff`, `admin`), `full_name`.
+- **`cake_categories`**: `id`, `name`, `slug`, `base_price`, `active`.
+- **`cake_flavors`**: `id`, `name`, `price_modifier`, `active`.
+- **`frostings`**: `id`, `name`, `price_modifier`, `active`.
+- **`cake_sizes`**: `id`, `weight_kg`, `servings_min`, `servings_max`, `price_modifier`.
+- **`decorations`**: `id`, `name`, `price`, `category`, `active`.
+- **`cake_designs`**: `id`, `user_id`, `tiers`, `primary_color`, `secondary_color`, `accent_color`, `theme`, `status`.
+- **`orders`**: `id`, `order_number`, `user_id`, `design_id`, `order_status`, `estimated_price`, `final_price`, `customer_confirmed_price`.
+- **`order_status_history`**: `id`, `order_id`, `status`, `message`, `updated_by`, `created_at`.
+- **`order_notes`**: `id`, `order_id`, `author_id`, `note`, `internal`, `created_at`.
+- **`ai_generations`**: `id`, `user_id`, `generation_type`, `prompt`, `response`, `created_at`.
+
+### 🔌 Service API Map
+* **`AuthService`**: Authentication lifecycle, session persistence, role-based profile retrieval.
+* **`CakeService`**: Catalog queries for categories, gourmet flavors, artisan frostings, and handcrafted decorations.
+* **`DesignService`**: Full CRUD for 14-step parametric cake studio configurations.
+* **`OrderService`**: Order request creation, staff quote review, customer price confirmation lock-in, and 10-step status updates.
+* **`PricingService`**: Real-time deterministic pricing calculation with tier and shape multipliers.
+* **`AIService`**: Conversational pastry stylist chat, reference image moodboard analysis, and preview generation.
+* **`AdminService`**: Dynamic pricing matrix updates, catalog management, and user RBAC controls.
+
+---
+
+## 6. Next Phased Roadmap
+
+- [x] **Phase 1 (Complete)**: 14-step cake designer studio, live pricing engine, staff order board, and AI image reference analyzer.
+- [x] **Phase 2 (Complete)**: Enterprise Error Boundaries, Vitest automated testing suite, and comprehensive API/database documentation.
+- [ ] **Phase 3 (Next)**: Three.js 3D parametric viewport enhancement with interactive cake slicing simulation.
+- [ ] **Phase 4**: Payment Gateway webhook integration (Stripe / Razorpay escrow).
+- [ ] **Phase 5**: Kitchen WhatsApp/SMS automated notification webhooks.
+
